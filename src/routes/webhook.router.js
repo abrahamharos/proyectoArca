@@ -1,10 +1,10 @@
-import express, { Request, Response } from "express";
-import fetch from 'node-fetch';
+const express = require('express');
+const fetch = require('node-fetch');
 
-export const webhookRequestRouter = express.Router();
+const webhookRequestRouter = express.Router();
 
 // Webhook challenge
-webhookRequestRouter.get("/", async (req: Request, res: Response) => {
+webhookRequestRouter.get("/", async (req, res) => {
     console.log(req);
     if (
         req.query['hub.mode'] == 'subscribe' &&
@@ -17,7 +17,7 @@ webhookRequestRouter.get("/", async (req: Request, res: Response) => {
 });
 
 // Webhook event
-webhookRequestRouter.post("/", async (req: Request, res: Response) => {
+webhookRequestRouter.post("/", async (req, res) => {
     if (req.body.object) {
         if (
           req.body.entry &&
@@ -68,3 +68,6 @@ webhookRequestRouter.post("/", async (req: Request, res: Response) => {
         res.sendStatus(404);
       }
 });
+
+
+module.exports = webhookRequestRouter;
