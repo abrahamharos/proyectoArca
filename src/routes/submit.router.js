@@ -1,20 +1,16 @@
 const express = require('express');
-const fileUpload = require('express-fileupload');
 const readXlsxFile = require('read-excel-file/node');
 const fs = require('fs');
-var format = require("string-template")
-
+const fetch = require('node-fetch');
+const format = require("string-template")
 
 const submitRouter = express.Router();
-
 const messageTemplateRoute = 'src/templates/messageTemplate.txt';
-
 const scoreMap = {
   'low': ['🟥', 'Malo'],
   'medium': ['🟨', 'Regular'],
   'high': ['🟩', 'Bueno'],
 }
-
 const columnList = ['xDxRLacteos', 'xDxRCafe', 'xDxRCatEnExp', 'clientesCompra', 'altaFdeV'];
 
 // Get indicadores
@@ -112,15 +108,16 @@ async function evaluateRutas(rutas, indicadores) {
       }
       messageVariables.push(scoreMap[score][0]);
       messageVariables.push(scoreMap[score][1]);
-      messageVariables.push(ruta[indicador['nombre']]);
+      messageVariables.push(parseFloat(ruta[indicador['nombre']]).toFixed(2));
       messageVariables.push(indicador['alto']);
     });
     
     // Compile File with variables
     let message = format(messageTemplate, messageVariables);
-    
+    console.log(message);
+    console.log('\n\n\n\n\n\n');
     // Send message
-    sendWhatsappMessage(process.env.WHATSAPP_API_AUTH_PHONE, message);
+    //sendWhatsappMessage(process.env.WHATSAPP_API_AUTH_PHONE, message);
   });
 }
 
@@ -142,11 +139,11 @@ submitRouter.post('/', async function(req, res) {
     return res.status(400).send('Please upload one xlsx file.');
   }
   
-  res.redirect('/submit');
-
   const rutas = await getRutas(reporteExcel);
   const indicadores = await getIndicadores(reporteExcel);
   await evaluateRutas(rutas, indicadores);
+  
+  res.redirect('/submit');
 });
 
 module.exports = submitRouter;
