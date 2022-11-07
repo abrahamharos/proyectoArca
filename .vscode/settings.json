@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/ed690e6b-b721-4b23-bf7a-d630a90053e8/AppServices/subscriptions/ed690e6b-b721-4b23-bf7a-d630a90053e8/resourceGroups/ac_infra_rg/providers/Microsoft.Web/sites/team2test",
+    "appService.deploySubpath": "."
+}

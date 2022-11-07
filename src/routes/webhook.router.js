@@ -39,7 +39,7 @@ webhookRequestRouter.post("/", async (req, res) => {
                 type: 'text',
                 text: {
                     preview_url: false,
-                    body: 'From webhook.router.js: ' + msg_body
+                    body: '_From webhook.router.js:_' + '\n' + msg_body
                 }
               };
 
