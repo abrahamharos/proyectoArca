@@ -4,22 +4,22 @@ Este es tu resumen de ventas al día de hoy
 *Ruta:*  {0}
 *Número:* {1}
 
-{2} *xDxR-Lácteos* {2}
+{2} *Lácteos CU x Día* {2}
 Tu nivel de ventas en esta categoría es *{3}*
 Actualmente tienes un promedio de *{4}*, el nivel ideal en esta categoría es de {5}
 
-{6} *xDxR-Café* {6}
+{6} *Café Costa Kg x Día* {6}
 Tu nivel de ventas en esta categoría es *{7}*
 Actualmente tienes un promedio de *{8}*, el nivel ideal en esta categoría es de {9}
 
-{10} *xDxR-CatEnExp* {10}
+{10} *Cat.en Exp. CU x Día* {10}
 Tu nivel de ventas en esta categoría es *{11}*
 Actualmente tienes un promedio de *{12}*, el nivel ideal en esta categoría es de {13}
 
-{14} *Clientes c/Compra* {14}
+{14} *Clientes con Venta x Sector* {14}
 Tu nivel de ventas en esta categoría es *{15}*
 Actualmente tienes un promedio de *{16}*, el nivel ideal en esta categoría es de {17}
 
-{18} *Alta F de V* {18}
+{18} *Gfn CO x Día* {18}
 Tu nivel de ventas en esta categoría es *{19}*
 Actualmente tienes un promedio de *{20}*, el nivel ideal en esta categoría es de {21}

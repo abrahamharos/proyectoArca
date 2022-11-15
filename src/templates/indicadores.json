@@ -1,0 +1,29 @@
+{
+    "indicadores": [
+        {
+            "nombre": "Lácteos CU x Día",
+            "bajo": 0,
+            "alto": 9
+        },
+        {
+            "nombre": "Café Costa Kg x Día",
+            "bajo": 0,
+            "alto": 2.47
+        },
+        {
+            "nombre": "Cat.en Exp. CU x Día",
+            "bajo": 0,
+            "alto": 5
+        },
+        {
+            "nombre": "Clientes con Venta x Sector",
+            "bajo": 40,
+            "alto": 90
+        },
+        {
+            "nombre": "Gfn CO x Día",
+            "bajo": 0,
+            "alto": 50
+        }
+    ]
+}

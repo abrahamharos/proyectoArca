@@ -1,5 +1,5 @@
 const express = require('express');
-const readXlsxFile = require('read-excel-file/node');
+const csv = require('csvtojson');
 const fs = require('fs');
 const fetch = require('node-fetch');
 const format = require("string-template")
@@ -11,53 +11,43 @@ const scoreMap = {
   'medium': ['🟨', 'Regular'],
   'high': ['🟩', 'Bueno'],
 }
-const columnList = ['xDxRLacteos', 'xDxRCafe', 'xDxRCatEnExp', 'clientesCompra', 'altaFdeV'];
+const columnList = ['Lácteos CU x Día', 'Café Costa Kg x Día', 'Cat.en Exp. CU x Día', 'Clientes con Venta x Sector', 'Gfn CO x Día'];
 
-// Get indicadores
-async function getIndicadores(reporteExcel) {
-  var indicadores = [];
-  await readXlsxFile(Buffer.from(reporteExcel['data'])).then((rows) => {
-    rows[0].forEach((jValue, jIndex) => {
-      if (jIndex >= 9) {
-        indicadores.push({
-              'nombre': columnList[jIndex - 9],
-              'bajo': rows[1][jIndex],
-              'alto': rows[3][jIndex]
-          });
-      }
-    });
-  });
-
-  console.log(indicadores);
-  return indicadores;
+// Read indicadores from JSON file
+function readIndicadores() {
+  const indicadoresBuffer = fs.readFileSync('src/templates/indicadores.json');
+  const indicadores = JSON.parse(indicadoresBuffer.toString());
+  return indicadores["indicadores"];
 }
 
-async function getRutas(reporteExcel) {
+async function getRutasFromCSV(reporteCSV){
   var rutas = [];
-  await readXlsxFile(Buffer.from(reporteExcel['data'])).then((rows) => {
-    rows.forEach((iValue, iIndex) => {
-      if (iIndex > 6) {
-        rutas.push({
-          'year': iValue[0],
-          'zona': iValue[1],
-          'territorio': iValue[2],
-          'subterritorio': iValue[3],
-          'cedi': iValue[4],
-          'ruta': iValue[5],
-          'recuento': (typeof iValue[6] === 'number') ? iValue[6] : 0,
-          'dias22': (typeof iValue[7] === 'number') ? iValue[7] : 0,
-          'xRutaCte': (typeof iValue[8] === 'number') ? iValue[8] : 0,
-          'xDxRLacteos': (typeof iValue[9] === 'number') ? iValue[9] : 0,
-          'xDxRCafe': (typeof iValue[10] === 'number') ? iValue[10] : 0,
-          'xDxRCatEnExp': (typeof(iValue[11]) == 'number') ? iValue[11] : 0,
-          'clientesCompra': (typeof iValue[12] == 'number') ? iValue[12] : 0,
-          'altaFdeV': (typeof iValue[13] == 'number') ? iValue[13] : 0,
-        });
-      }
-    });
-  });
+  const csvReport = reporteCSV['data'].toString();
+  let data = csvReport.split("\n");
+  
+  for (let i = 0; i < data.length; i++) {
+    if(i > 2 && i < data.length - 2) {
+      let row = data[i].split(",");
+      var formattedRows = row.map(function(e) { 
+        e = e.replace(/["']/g, "");
+        return e;
+      });
+      
+      rutas.push({
+        'region': formattedRows[0],
+        'territorio': formattedRows[1],
+        'subterritorio': formattedRows[2],
+        'cedi': formattedRows[3],
+        'ruta': formattedRows[4],
+        'Lácteos CU x Día': (isNaN(parseFloat(formattedRows[5]))) ? 0 : parseFloat(formattedRows[5]),
+        'Café Costa Kg x Día': (isNaN(parseFloat(formattedRows[6]))) ? 0 : parseFloat(formattedRows[6]),
+        'Cat.en Exp. CU x Día': (isNaN(parseFloat(formattedRows[7]))) ? 0 : parseFloat(formattedRows[7]),
+        'Clientes con Venta x Sector': (isNaN(parseFloat(formattedRows[8]))) ? 0 : parseFloat(formattedRows[8]),
+        'Gfn CO x Día': (isNaN(parseFloat(formattedRows[9]))) ? 0 : parseFloat(formattedRows[9]),
+      });
+    }
+  }
 
-  console.log(rutas);
   return rutas;
 }
 
@@ -86,6 +76,7 @@ async function sendWhatsappMessage(phone_number, message) {
 
   const response = await fetch(whatsapp_api_url, postReq);
   const data = await response.json();
+  console.log(data);
   return data;
 }
 
@@ -114,10 +105,8 @@ async function evaluateRutas(rutas, indicadores) {
     
     // Compile File with variables
     let message = format(messageTemplate, messageVariables);
-    console.log(message);
-    console.log('\n\n\n\n\n\n');
     // Send message
-    //sendWhatsappMessage(process.env.WHATSAPP_API_AUTH_PHONE, message);
+    sendWhatsappMessage(process.env.WHATSAPP_API_AUTH_PHONE, message);
   });
 }
 
@@ -132,15 +121,14 @@ submitRouter.post('/', async function(req, res) {
     return res.status(400).send('No files were uploaded.');
   }
   
-  let reporteExcel;
+  let reporteCSV;
   if (!Array.isArray(req.files.reporteExcel)) {
-    reporteExcel = req.files.reporteExcel;
+    reporteCSV = req.files.reporteExcel;
   } else {
     return res.status(400).send('Please upload one xlsx file.');
   }
-  
-  const rutas = await getRutas(reporteExcel);
-  const indicadores = await getIndicadores(reporteExcel);
+  const indicadores = readIndicadores();
+  const rutas = await getRutasFromCSV(reporteCSV);
   await evaluateRutas(rutas, indicadores);
   
   res.redirect('/submit');
