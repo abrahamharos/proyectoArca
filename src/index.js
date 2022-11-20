@@ -25,6 +25,7 @@ const app = express();
  */
 
 app.use(express.json());
+app.use(express.static(__dirname + '/public'));
 app.use(fileUpload());
 
 /**
@@ -40,4 +41,4 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use("/webhooks", webhookRequestRouter);
-app.use("/submit", submitRouter);
+app.use("/", submitRouter);
