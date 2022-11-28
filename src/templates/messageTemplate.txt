@@ -1,8 +1,8 @@
-Hola 👋🏼, soy tu asistente de ventas ArcaBot 🦾.
+Hola *_{22}_* 👋🏼, soy tu asistente de ventas ArcaBot 🦾.
 
 Este es tu resumen de ventas al día de hoy
-*Ruta:*  {0}
-*Número:* {1}
+*CEDI:*  {0}
+*Número de ruta:* {1}
 
 {2} *Lácteos CU x Día* {2}
 Tu nivel de ventas en esta categoría es *{3}*

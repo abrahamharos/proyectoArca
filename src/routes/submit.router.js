@@ -13,6 +13,8 @@ const scoreMap = {
 }
 const columnList = ['Lácteos CU x Día', 'Café Costa Kg x Día', 'Cat.en Exp. CU x Día', 'Clientes con Venta x Sector', 'Gfn CO x Día'];
 
+const sendTo = "jefe";
+
 // Read indicadores from JSON file
 function readIndicadores() {
   const indicadoresBuffer = fs.readFileSync('src/templates/indicadores.json');
@@ -20,38 +22,78 @@ function readIndicadores() {
   return indicadores["indicadores"];
 }
 
-async function getRutasFromCSV(reporteCSV){
-  var rutas = [];
-  const csvReport = reporteCSV['data'].toString();
-  let data = csvReport.split("\n");
-  
-  for (let i = 0; i < data.length; i++) {
-    if(i > 2 && i < data.length - 2) {
-      let row = data[i].split(",");
-      var formattedRows = row.map(function(e) { 
-        e = e.replace(/["']/g, "");
-        return e;
-      });
-      
-      rutas.push({
-        'region': formattedRows[0],
-        'territorio': formattedRows[1],
-        'subterritorio': formattedRows[2],
-        'cedi': formattedRows[3],
-        'ruta': formattedRows[4],
-        'Lácteos CU x Día': (isNaN(parseFloat(formattedRows[5]))) ? 0 : parseFloat(formattedRows[5]),
-        'Café Costa Kg x Día': (isNaN(parseFloat(formattedRows[6]))) ? 0 : parseFloat(formattedRows[6]),
-        'Cat.en Exp. CU x Día': (isNaN(parseFloat(formattedRows[7]))) ? 0 : parseFloat(formattedRows[7]),
-        'Clientes con Venta x Sector': (isNaN(parseFloat(formattedRows[8]))) ? 0 : parseFloat(formattedRows[8]),
-        'Gfn CO x Día': (isNaN(parseFloat(formattedRows[9]))) ? 0 : parseFloat(formattedRows[9]),
-      });
-    }
-  }
+async function getContactsFromCSV(contactosCSV, res) {
+  try {
+    var contacts = {};
+    const csvReport = contactosCSV['data'].toString();
+    let data = csvReport.split("\n");
 
-  return rutas;
+    for (let i = 0; i < data.length; i++) {
+      if (i > 0) {
+        let row = data[i].split(",");
+        var formattedRows = row.map(function (e) {
+          e = e.replace(/["'\r]/g, "");
+          return e;
+        });
+
+        contactObj = {
+          'nombre': formattedRows[0],
+          'telefono': formattedRows[1],
+          'puesto': formattedRows[3],
+        };
+
+        if (formattedRows[2] in contacts) {
+          contacts[formattedRows[2]].push(contactObj);
+        } else {
+          contacts[formattedRows[2]] = [contactObj];
+        }
+      }
+    }
+
+    console.log(contacts);
+
+    return contacts;
+  } catch (e) {
+    return res.status(400).send('Invalid format of contacts CSV provided.');
+  }
 }
 
-async function sendWhatsappMessage(phone_number, message) {
+async function getRutasFromCSV(reporteCSV, res) {
+  try {
+    var rutas = [];
+    const csvReport = reporteCSV['data'].toString();
+    let data = csvReport.split("\n");
+
+    for (let i = 0; i < data.length; i++) {
+      if (i > 2 && i < data.length - 2) {
+        let row = data[i].split(",");
+        var formattedRows = row.map(function (e) {
+          e = e.replace(/["']/g, "");
+          return e;
+        });
+
+        rutas.push({
+          'region': formattedRows[0],
+          'territorio': formattedRows[1],
+          'subterritorio': formattedRows[2],
+          'cedi': formattedRows[3],
+          'ruta': formattedRows[4],
+          'Lácteos CU x Día': (isNaN(parseFloat(formattedRows[5]))) ? 0 : parseFloat(formattedRows[5]),
+          'Café Costa Kg x Día': (isNaN(parseFloat(formattedRows[6]))) ? 0 : parseFloat(formattedRows[6]),
+          'Cat.en Exp. CU x Día': (isNaN(parseFloat(formattedRows[7]))) ? 0 : parseFloat(formattedRows[7]),
+          'Clientes con Venta x Sector': (isNaN(parseFloat(formattedRows[8]))) ? 0 : parseFloat(formattedRows[8]),
+          'Gfn CO x Día': (isNaN(parseFloat(formattedRows[9]))) ? 0 : parseFloat(formattedRows[9]),
+        });
+      }
+    }
+
+    return rutas;
+  } catch (e) {
+    return res.status(400).send('Invalid format of report CSV provided.');
+  }
+}
+
+async function sendWhatsappMessage(phone_number, message, res) {
   const whatsapp_api_url = 'https://graph.facebook.com/v15.0/' + process.env.WHATSAPP_API_BOT_ID + '/messages';
   const messageData = {
     to: phone_number,
@@ -80,7 +122,7 @@ async function sendWhatsappMessage(phone_number, message) {
   return data;
 }
 
-async function evaluateRutas(rutas, indicadores) {
+async function evaluateRutas(rutas, indicadores, contactos, res) {
   // Get message template file
   const messageTemplateBuffer = fs.readFileSync(messageTemplateRoute);
   let messageTemplate = messageTemplateBuffer.toString();
@@ -102,36 +144,71 @@ async function evaluateRutas(rutas, indicadores) {
       messageVariables.push(parseFloat(ruta[indicador['nombre']]).toFixed(2));
       messageVariables.push(indicador['alto']);
     });
-    
-    // Compile File with variables
-    let message = format(messageTemplate, messageVariables);
-    // Send message
-    sendWhatsappMessage(process.env.WHATSAPP_API_AUTH_PHONE, message);
+
+
+    // get contacts for this ruta
+    if (ruta['ruta'] in contactos) {
+      let contacts = contactos[ruta['ruta']];
+      contacts.forEach((contact) => {
+        if (contact['puesto'] == sendTo) {
+          let phone_number = contact['telefono'];
+          let nombre = contact['nombre'];
+          messageVariables.push(nombre);
+
+          // Compile File with variables
+          let message = format(messageTemplate, messageVariables);
+
+          // Send message
+          sendWhatsappMessage(phone_number, message, res);
+        }
+      });
+    } else {
+      console.log('No contacts for ruta ' + ruta['ruta']);
+    }
   });
 }
 
-/* GET home page. */
-submitRouter.get('/', function(req, res) {
-    res.render('submit', {});
-  });
-
-submitRouter.post('/', async function(req, res) {
-
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return res.status(400).send('No files were uploaded.');
-  }
-  
+async function getReporteCSV(req, res) {
   let reporteCSV;
-  if (!Array.isArray(req.files.reporteExcel)) {
-    reporteCSV = req.files.reporteExcel;
+
+  if (!Array.isArray(req.files.reporteCSV)) {
+    reporteCSV = req.files.reporteCSV;
   } else {
-    return res.status(400).send('Please upload one xlsx file.');
+    return res.status(400).send('Please upload report csv file.');
   }
+
+  return await getRutasFromCSV(reporteCSV, res);
+}
+
+async function getContactosCSV(req, res) {
+  let contactosCSV;
+
+  if (!Array.isArray(req.files.contactosCSV)) {
+    contactosCSV = req.files.contactosCSV;
+  } else {
+    return res.status(400).send('Please upload contacts csv file.');
+  }
+
+  return await getContactsFromCSV(contactosCSV, res);
+}
+
+/* GET home page. */
+submitRouter.get('/', function (req, res) {
+  res.render('submit', {});
+});
+
+submitRouter.post('/', async function (req, res) {
+
+  if (!req.files || Object.keys(req.files).length <= 1) {
+    return res.status(400).send('No all files were uploaded.');
+  }
+
+  const rutas = await getReporteCSV(req, res);
   const indicadores = readIndicadores();
-  const rutas = await getRutasFromCSV(reporteCSV);
-  await evaluateRutas(rutas, indicadores);
-  
-  res.redirect('/submit');
+  const contacts = await getContactosCSV(req, res);
+  await evaluateRutas(rutas, indicadores, contacts, res);
+
+  res.redirect('/');
 });
 
 module.exports = submitRouter;
