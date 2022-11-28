@@ -11,6 +11,7 @@
  */
  const webhookRequestRouter = require('./routes/webhook.router');
  const submitRouter = require('./routes/submit.router');
+ const enviarRouter = require('./routes/enviar.router');
 
  dotenv.config();
 
@@ -42,3 +43,4 @@ app.set('view engine', 'ejs');
 
 app.use("/webhooks", webhookRequestRouter);
 app.use("/", submitRouter);
+app.use("/enviar", enviarRouter);
